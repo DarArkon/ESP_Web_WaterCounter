@@ -19,7 +19,7 @@
 
 ## Water meter on ESP8266
 
- * Available functions:
+* Available functions:
 
   1. WiFi connection;
   2. Web interface;
@@ -31,7 +31,7 @@
     
 Display of data on the display and web page
 
- * List of future improvements:
+* List of future improvements:
 
   1. Storage of consumption data in non-volatile memory;
   2. Changing the method of connecting to the WiFi network (the possibility of choosing a network to connect to)
