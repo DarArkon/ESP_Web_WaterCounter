@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Витрата</title>
+	<style type="text/css">
+		body {
+		background-color:#e7e7e7;
+		margin: 0;
+		}
+
+		code {
+			background: #c9c9c9; 
+			border-radius: 6px;
+			color: #000000;
+			display: block;
+			font: 16px/45px "Source Code Pro", Inconsolata, "Lucida Console", Terminal, "Courier New", Courier;
+			padding: 10px;
+			font-size: 120%;
+		}
+		button {
+			background: #c9c9c9; 
+			border-radius: 6px;
+			color: #000000;
+			display: block;
+			padding: 10px;
+			font-size: 100%;
+			width: 100%;
+			height: 100%;
+			cursor: pointer;
+			box-shadow: 0 9px #999;
+		}
+		button:hover {
+		background-color: #ffffff
+		}
+		button:active {
+			box-shadow: 0 5px #111;
+			transform: translateY(4px);
+		}
+		header {
+			margin: 0 5% 10px 5%;
+		}
+		section {
+			margin: 0 1% 10px 5%;
+			float: left;
+			width: 60%;
+			height: 80px;
+			
+		}
+		aside {
+			margin: 0 5% 10px 1%;
+			float: right;
+			width: 28%;
+			height: 80px;
+		}
+		naside {
+			margin: 0 5% 10px 5%;
+			float: left;
+			width: 90%;
+		}
+	</style>
+	
+	<head>
+    <!-- Load plotly.js into the DOM -->
+		<!-- <script src="plotly-basic.min.js"></script> -->
+		 <script src='https://cdn.plot.ly/plotly-2.3.1.min.js'></script> <!-- -->
+	</head>
+	
+	<body>
+		<header> 
+			<code style="text-align: center; color:white; font-family: Open sans;font-weight: bold; font-size: 200%; background-color: #000000;">Відображення Данних</code>
+		</header>
+		<section>
+			<code>Швидкість потоку</code>
+		</section>
+		<aside>
+			<code style="text-align: center;"><span id="adc_val">0</span> <sup>л</sup>/<sub>с</sub> </code>
+		</aside>
+			
+		<section>
+			<code>Витрата води</code>
+		</section>
+		<aside>
+			<code style="text-align: center;"><span id="var2">0</span> м<sup>3</sup></code>
+		</aside>
+		
+		<section>
+			<code>Час роботи</code>
+		</section>
+		<aside>
+			<code style="text-align: center;"><span id="time1">0</span></code>
+		</aside>
+		
+		<naside>
+			<div id='myDiv'></div>
+		</naside>
+		<naside>
+		</naside>
+		<aside> 
+			<button id="g_button", onclick="act_deact_graf(this)" style="text-align: center;">Графік активовано</button>
+		</aside>
+		<naside>
+		</naside>
+		<aside> 
+			<button id="g_button", onclick="document.location='/submit'" style="text-align: center;">Змінити користувача</button>
+		</aside>
+		
+		<script>
+			let bol = 1;
+			function act_deact_graf(x) {
+				if(bol){
+					bol = 0;
+					document.getElementById("g_button").innerHTML = "Графік деактивовано";
+					x.style.background = "#a9a9a9";
+				}
+				else {
+					bol = 1;
+					document.getElementById("g_button").innerHTML = "Графік активовано";
+					x.style.background = "#d3d3d3";
+				}
+			}
+			
+			let formattedTime = 0;
+			const secondsToHms = (seconds) => {
+				const hours = Math.floor(seconds / 3600);
+				const minutes = Math.floor((seconds % 3600) / 60);
+				const remainingSeconds = seconds % 60;
+
+				const formattedHours = String(hours).padStart(2, '0');
+				const formattedMinutes = String(minutes).padStart(2, '0');
+				const formattedSeconds = String(remainingSeconds).padStart(2, '0');
+
+				return `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
+			}
+		
+			function updateVariables() {
+				var xhttp = new XMLHttpRequest();
+				xhttp.onreadystatechange = function() {
+				  if (this.readyState == 4 && this.status == 200) {
+					var response = JSON.parse(this.responseText);
+					document.getElementById('time1').innerHTML = secondsToHms(formattedTime);
+					document.getElementById('var2').innerHTML = response.variable2;
+					document.getElementById('var3').innerHTML = response.variable3;
+				  }
+				};
+				xhttp.open('GET', '/update', true);
+				xhttp.send();
+				formattedTime = formattedTime + 1;
+			}
+		
+			const Ax = [], Ay = [];
+			setInterval( () => {
+				updateVariables();
+				document.getElementById("adc_val").innerHTML = Math.round( Math.random()* 2 + 13 );
+				document.getElementById('time1').innerHTML = secondsToHms(formattedTime);
+				if (bol){
+					if(Ay.length < 31){addPoint( Ax, Ay );}
+					else{
+						addPoint( Ax, Ay );
+						shiftPoint( Ax, Ay );
+					}
+					var cost = {
+						type: "scatter",
+						mode: "lines+markers",
+						name: "Витрата",
+						x: Ax.length,
+						y: Ay,
+						line: {color: '#0058d1', shape: 'spline'}
+					};
+
+					var preset = {
+					  type: "scatter",
+					  mode: "lines",
+					  name: " ",
+					  x: ['0', '31'], 
+					  y: ['0', '25'],
+					  line: {color: '#ffffff '},
+					};
+
+					var data = [preset, cost];
+				
+					var layout = {
+					  title: 'Графік зміни швидкості потоку води',
+					   xaxis: {
+						rangemode: 'tozero',
+						fixedrange: true,
+						title: 'Час, с',
+						autotick: false,
+						ticks: 'outside',
+						tick0: 0,
+						dtick: 1,
+						ticklen: 5,
+						tickwidth: 1,
+						tickcolor: '#000'
+					  },
+					  yaxis: {
+						rangemode: 'tozero',
+						fixedrange: true,
+						title: 'Швидкість потоку, <sup>л</sup>/<sub>с</sub>',
+						autotick: false,
+						ticks: 'outside',
+						tick0: 0,
+						dtick: 5,
+						ticklen: 5,
+						tickwidth: 1,
+						tickcolor: '#000'
+					  },
+						
+					  showlegend: false
+					};
+				
+					Plotly.newPlot('myDiv', data, layout, {displayModeBar: false} );
+				}
+			}, 1000 );
+
+			function addPoint( xs, ys) {
+				xs.push( xs.length + 1 );
+				ys.push( document.getElementById("adc_val").innerHTML );
+			}
+			function shiftPoint( xs, ys) {
+				xs.shift();
+				ys.shift();
+			}
+		</script>	
+	</body>
+</html>
